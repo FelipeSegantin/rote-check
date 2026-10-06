@@ -1,0 +1,840 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap");
+
+/* Tema escuro (padrão) — os valores de cor ficam só aqui e no bloco
+   [data-theme="claro"] logo abaixo; o resto do CSS usa só as variáveis,
+   nunca uma cor direto, pra funcionar nos dois temas. O tema realmente
+   aplicado (depois de resolver "sistema") fica em document.documentElement
+   como data-theme="escuro" ou data-theme="claro" — ver src/lib/tema.js. */
+:root {
+  color-scheme: dark;
+  --bg: #0a0a0a;
+  --surface: #161616;
+  --surface-alt: #1f1f1f;
+  --border: #333333;
+  --text: #f5f5f0;
+  --text-dim: #a8a8a0;
+
+  --accent: #ffcc00;      /* rotas ativas, ações primárias (fundo de botão/aba) */
+  --accent-strong: #e0b400;
+  --accent-ink: #1a1400;  /* texto sobre fundo amarelo */
+  --accent-text: var(--accent); /* amarelo usado como TEXTO sobre o fundo da página (links etc.) */
+  --amber: #ff9f1c;       /* pendente / risco de atraso */
+  --danger: #e5555f;      /* recusada */
+  --ok: var(--accent-text);
+
+  --radius: 10px;
+  --font-ui: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* Tema claro — mesma paleta de marca (preto + amarelo), só invertida.
+   O amarelo puro (--accent) continua só como FUNDO de botão/aba (sempre
+   com texto escuro em cima, --accent-ink, então o contraste não muda).
+   Pra texto solto sobre a página (links, badges, avisos), usamos tons
+   mais escuros e saturados — amarelo puro como texto ficaria ilegível
+   sobre fundo claro. */
+:root[data-theme="claro"] {
+  color-scheme: light;
+  --bg: #f6f4ee;
+  --surface: #ffffff;
+  --surface-alt: #eeece3;
+  --border: #ddd8c8;
+  --text: #1c1a14;
+  --text-dim: #6b6558;
+
+  --accent-strong: #b48f00;
+  --accent-text: #8a6900;
+  --amber: #a15c00;
+  --danger: #c22a38;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+html,
+body {
+  /* Rede de segurança contra qualquer elemento que force largura maior
+     que a tela (o app inteiro "arrastando" para o lado no celular). O
+     conteúdo largo de verdade (mapa, chat) já rola dentro do seu próprio
+     container via .scroll-x. */
+  overflow-x: hidden;
+  width: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  color: inherit;
+  /* Sem isso, um <select>/<input> dentro de uma linha flex (ex.: escolher
+     coletor + botão Aceitar) não encolhe e pode empurrar a tela para
+     fora da largura no celular. */
+  min-width: 0;
+}
+
+input,
+select,
+textarea {
+  /* Estilo escuro padrão pra qualquer campo, mesmo fora de .field (ex.:
+     os campos soltos nas telas de gerente/despachante) — antes ficavam
+     brancos, destoando do resto do app. */
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  /* 16px evita o zoom automático do Safari/iOS ao focar um campo. */
+  font-size: max(16px, 1em);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-dim);
+}
+
+a {
+  color: var(--accent-text);
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.app-content {
+  flex: 1;
+  /* O topo reserva espaço pro botão fixo de Configurações (40px + a mesma
+     margem de segurança que ele usa) — sem isso, títulos longos como
+     "Painel do despachante" ficariam embaixo do botão em telas estreitas. */
+  padding: calc(64px + env(safe-area-inset-top, 0px)) 16px 84px;
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Telas de login/cadastro/recuperação: centralizadas na tela (e não só
+   coladas no topo com um vazio enorme embaixo, principalmente no
+   desktop). */
+.auth-page {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+}
+
+.logo-linha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.field label {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+}
+
+/* Campo de senha com botão "Ver/Ocultar" dentro do próprio input (usado no
+   login) — mesmo padding à direita do input pra não ficar o texto embaixo
+   do botão. */
+.campo-senha {
+  position: relative;
+}
+.campo-senha input {
+  padding-right: 64px;
+}
+.btn-ver-senha {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--accent-text);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+.btn-ver-senha:hover {
+  text-decoration: underline;
+}
+
+.btn {
+  border: none;
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 0.08s ease, filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn:hover {
+  filter: brightness(1.08);
+}
+.btn:active {
+  transform: scale(0.98);
+}
+.btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+  transform: none;
+}
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 4px 14px rgba(255, 204, 0, 0.25);
+}
+
+.btn-secondary {
+  background: var(--surface-alt);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-danger {
+  background: var(--surface-alt);
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+.btn-danger:hover {
+  background: var(--danger);
+  color: #fff;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+  line-height: 1.6;
+}
+
+.status-pendente {
+  background: rgba(255, 159, 28, 0.15);
+  color: var(--amber);
+}
+.status-aceita {
+  background: rgba(255, 204, 0, 0.15);
+  color: var(--accent-text);
+}
+.status-recusada {
+  background: rgba(229, 85, 95, 0.15);
+  color: var(--danger);
+}
+.status-coletada {
+  background: rgba(154, 161, 177, 0.15);
+  color: var(--text-dim);
+}
+.status-disponivel {
+  background: rgba(255, 204, 0, 0.15);
+  color: var(--ok);
+}
+.status-manutencao {
+  background: rgba(229, 85, 95, 0.15);
+  color: var(--danger);
+}
+.status-dia_iniciado {
+  background: rgba(66, 199, 130, 0.15);
+  color: var(--ok);
+}
+.status-dia_nao_iniciado {
+  background: rgba(154, 161, 177, 0.15);
+  color: var(--text-dim);
+}
+
+/* Abas do gerente/despachante: rolam na horizontal, nunca quebram linha.
+   Além do dedo (touch) e do scroll do trackpad, dá pra arrastar com o
+   mouse mesmo (ver src/lib/arrastoTabs.js) — o cursor de "mãozinha" é a
+   dica visual de que dá pra arrastar. */
+.tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  -webkit-overflow-scrolling: touch;
+  cursor: grab;
+}
+.tabs.tabs-arrastando {
+  cursor: grabbing;
+  scroll-behavior: auto;
+}
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+.tab {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.tab.active {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+
+/* Nível de navegação "de área" (ex.: Operação/Acompanhamento/Equipe no
+   painel do gerente) — some sobre o .tab normal (o botão continua com as
+   duas classes, "tab grupo-tab", só pra não depender de nada de novo em
+   quem já procura por ".tab" na tela) pra virar um seletor segmentado:
+   um "trilho" com fundo próprio, sem borda em cada botão, cada um
+   ocupando uma fatia igual. Existe pra deixar claro que esse nível é
+   diferente do nível de baixo (a aba específica dentro da área) — antes
+   os dois pareciam a mesma pilha de pílulas repetida. Só 3 grupos, nunca
+   estoura a largura, por isso não precisa do scroll horizontal de .tabs. */
+.grupos-nav {
+  display: flex;
+  gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px;
+  margin-bottom: 16px;
+}
+.tab.grupo-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-weight: 600;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.tab.grupo-tab.active {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: transparent;
+}
+
+/* Nível mais fino, de filtro dentro de uma aba (ex.: Pendentes/Aceitas/
+   Não atendidas/Coletadas dentro de Coletas) — mais discreto que um .tab
+   normal (só reduz o tamanho, continua amarelo quando ativo, mesma
+   linguagem visual do resto do app), pra não competir com o nível de
+   navegação acima. */
+.tab.tab-compacta {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+/* O contador de não lida (fundo amarelo) fica invisível em cima de uma
+   aba já amarela (ativa) sem isso — inverte as cores só nesse caso. */
+.tab.active .contador-nao-lido {
+  background: var(--accent-ink);
+  color: var(--accent);
+}
+
+/* Filtro "por coletor" dentro de Coletas (só aparece no histórico —
+   Aceitas/Não atendidas/Coletadas, ver AbaColetas.jsx). Uma pílula
+   compacta em linha (rótulo + select), em vez do bloco empilhado de
+   .field, pra combinar com as abas ao redor em vez de parecer mais um
+   formulário solto no meio da lista. */
+.filtro-coletor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.filtro-coletor label {
+  font-size: 13px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.filtro-coletor select {
+  flex: 1;
+  max-width: 220px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+/* Toggle estilo "interruptor" — usado por exemplo em "Manter-me conectado"
+   no Login, no lugar da checkbox quadrada padrão do navegador, que destoa
+   do resto do visual (tudo arredondado, com o amarelo de destaque). */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 14px;
+  color: var(--text);
+}
+.toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+.toggle-trilho {
+  position: relative;
+  flex-shrink: 0;
+  width: 40px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.toggle-trilho::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.toggle input:checked + .toggle-trilho {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.toggle input:checked + .toggle-trilho::after {
+  transform: translateX(16px);
+  background: var(--accent-ink);
+}
+.toggle input:focus-visible + .toggle-trilho {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 6px max(6px, env(safe-area-inset-left)) calc(6px + env(safe-area-inset-bottom));
+}
+/* A barra de fundo ocupa a tela toda, mas os links ficam alinhados com a
+   mesma coluna central do conteúdo (.app-content), em vez de se
+   espalharem pela largura inteira da tela no desktop. */
+.bottom-nav-inner {
+  display: flex;
+  width: 100%;
+  max-width: 720px;
+}
+.bottom-nav a {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-dim);
+  text-decoration: none;
+  padding: 6px 0;
+  border-radius: 8px;
+}
+.bottom-nav a.active {
+  color: var(--accent-text);
+}
+
+/* Grupo de botões fixos no canto superior direito da tela, acima de
+   qualquer conteúdo — Configurações (todo mundo) e, só pro cliente, Como
+   usar. ".app-content" reserva um respiro no topo (ver mais abaixo) pra
+   nenhum título ficar embaixo deles. */
+.botoes-topo-fixos {
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  right: max(16px, env(safe-area-inset-right, 0px));
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.botao-config-fixo,
+.botao-como-usar-fixo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.08s ease;
+}
+.botao-config-fixo {
+  width: 40px;
+  height: 40px;
+}
+.botao-config-fixo svg {
+  width: 19px;
+  height: 19px;
+}
+/* Botão de "Como usar": menor que o de Configurações — é uma ajuda
+   opcional, não uma função do dia a dia, então não precisa do mesmo
+   destaque. */
+.botao-como-usar-fixo {
+  width: 32px;
+  height: 32px;
+}
+.botao-como-usar-fixo svg {
+  width: 14px;
+  height: 14px;
+}
+.botao-config-fixo:hover,
+.botao-como-usar-fixo:hover {
+  filter: brightness(1.08);
+}
+.botao-config-fixo:active,
+.botao-como-usar-fixo:active {
+  transform: scale(0.94);
+}
+.botao-config-fixo.active {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+
+/* Janela do vídeo "Como usar", abrindo por cima da tela em vez de mandar o
+   cliente pra outro site. */
+.modal-como-usar-fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.6);
+}
+.modal-como-usar-conteudo {
+  width: 100%;
+  /* 560px cabe bem o vídeo vertical (celular); em tela larga o vídeo
+     horizontal (computador) aproveita mais espaço, até o mesmo limite do
+     conteúdo do app (ver .app-content). */
+  max-width: 560px;
+  max-height: 100%;
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+@media (min-width: 700px) {
+  .modal-como-usar-conteudo {
+    max-width: 720px;
+  }
+}
+.modal-como-usar-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-como-usar-fechar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.modal-como-usar-fechar:hover {
+  filter: brightness(1.08);
+}
+.modal-como-usar-video {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
+.modal-como-usar-video iframe,
+.modal-como-usar-video video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Evita o scroll horizontal da tela inteira no mobile; qualquer conteúdo
+   largo (tabela, mapa, chat) rola dentro do próprio container. */
+.scroll-x {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+img.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface-alt);
+}
+
+/* Seletor de veículo (Fiorino/Van/Moto): três "quadrados" do mesmo
+   tamanho, com wrap seguro em telas estreitas em vez de espremer texto
+   e ícone numa linha só. */
+.veiculo-selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.veiculo-opcao {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  aspect-ratio: 1 / 1;
+  min-height: 64px;
+  padding: 8px 4px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  color: var(--text);
+  cursor: pointer;
+  text-align: center;
+}
+
+.veiculo-opcao.ativo {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+
+.veiculo-opcao-icone {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.veiculo-opcao-label {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+@media (max-width: 360px) {
+  .veiculo-opcao-icone {
+    font-size: 18px;
+  }
+  .veiculo-opcao-label {
+    font-size: 11px;
+  }
+}
+
+/* Foto de perfil em Configurações: avatar grande com botão de trocar
+   sobreposto, em vez de um <input type=file> solto. */
+.avatar-editor {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.avatar-grande {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.avatar-editor label.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.avatar-editor input[type="file"] {
+  display: none;
+}
+
+.erro-campo {
+  color: var(--danger);
+  font-size: 12.5px;
+  margin: 4px 0 0;
+}
+
+.field input.campo-invalido,
+.field select.campo-invalido {
+  border-color: var(--danger);
+}
+
+.forca-senha {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.forca-senha-barra {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--surface-alt);
+  overflow: hidden;
+}
+.forca-senha-barra span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.15s ease;
+}
+
+.foto-miniatura {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.foto-miniatura-vazia {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  background: var(--surface-alt);
+  border: 1px dashed var(--border);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 4px;
+}
+
+.badge-papel {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+
+/* Bolinha de "mensagem não lida" — ao lado do que indica uma conversa
+   com novidade que a pessoa ainda não abriu. */
+.ponto-nao-lido {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--surface);
+  flex-shrink: 0;
+}
+.contador-nao-lido {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 10px;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+/* Linhas de dado somente-leitura na aba "Perfil" de Configurações. */
+.perfil-linha {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.perfil-linha:last-child {
+  border-bottom: none;
+}
+.perfil-linha-label {
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+.perfil-linha-valor {
+  text-align: right;
+  overflow-wrap: anywhere;
+}

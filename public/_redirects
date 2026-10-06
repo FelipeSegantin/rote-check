@@ -1,0 +1,6 @@
+# O RoteCheck é uma SPA (React Router) — sem isso, hospedagens como Netlify
+# tentam achar um arquivo de verdade em cada rota (ex.: /configuracoes) e
+# devolvem 404 ao recarregar a página ou abrir um link direto. Essa regra
+# manda qualquer caminho pro index.html, que aí o React Router assume e
+# mostra a tela certa.
+/*  /index.html  200
